@@ -1,0 +1,92 @@
+/***************************************************************************
+ *
+ * Copyright (c) 2017 Baidu.com, Inc. All Rights Reserved
+ * @author duanbing(duanbing@baidu.com)
+ *
+ **************************************************************************/
+
+/**
+ * @filename main.go
+ * @desc
+ * @create time 2018-04-19 15:49:26
+**/
+package main
+
+import (
+	ec "baidu.com/evm/core"
+	"baidu.com/evm/state"
+	"baidu.com/evm/vm"
+	"fmt"
+	"time"
+
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/params"
+)
+
+var (
+	testHash    = common.StringToHash("duanbing")
+	testAddress = common.StringToAddress("duanbing")
+	toAddress   = common.StringToAddress("andone")
+	data        = []byte("0x6060604052341561000f57600080fd5b60b18061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063c6888fa1146044575b600080fd5b3415604e57600080fd5b606260048080359060200190919050506078565b6040518082815260200191505060405180910390f35b60006007820290509190505600a165627a7a72305820c4ac950a92caa9944a7e07e030542e9ed7db92631adcc234d86a105c853b81a20029")
+	msg         = ec.NewMessage(testAddress, &toAddress, uint64(1), big.NewInt(10), big.NewInt(10), big.NewInt(1), data, false)
+	header      = types.Header{
+		ParentHash:  common.Hash{},
+		UncleHash:   common.Hash{},
+		Coinbase:    testAddress,
+		Root:        testHash,
+		TxHash:      testHash,
+		ReceiptHash: testHash,
+		Bloom:       types.BytesToBloom([]byte("duanbing")),
+		Difficulty:  big.NewInt(1),
+		Number:      big.NewInt(1),
+		GasLimit:    big.NewInt(100000),
+		GasUsed:     big.NewInt(100000),
+		Time:        big.NewInt(time.Now().Unix()),
+		Extra:       nil,
+		MixDigest:   testHash,
+		Nonce:       types.EncodeNonce(1),
+	}
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+	cc := ChainContext{}
+	ctx := ec.NewEVMContext(msg, &header, cc, &testAddress)
+	mdb, err := ethdb.NewMemDatabase()
+	must(err)
+	db := state.NewDatabase(mdb)
+	statedb, err := state.New(common.Hash{}, db)
+	//set balance
+	statedb.GetOrNewStateObject(testAddress)
+	statedb.AddBalance(testAddress, big.NewInt(100000000))
+	must(err)
+
+	config := params.TestnetChainConfig
+	vmConfig := vm.Config{DisableGasMetering: true}
+
+	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
+	contractRef := ContractRef{}
+	ret, outputs, gas, vmerr := evm.Create(contractRef, data, uint64(1), big.NewInt(1))
+	fmt.Println(ret, outputs, gas, vmerr)
+}
+
+type ContractRef struct{}
+
+func (cr ContractRef) Address() common.Address {
+	return testAddress
+}
+
+type ChainContext struct{}
+
+func (cc ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header {
+	return &header
+}
