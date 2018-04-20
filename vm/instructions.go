@@ -228,6 +228,7 @@ func opEq(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack
 
 func opIszero(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	x := stack.pop()
+	fmt.Printf("no!!!!!!!!!!!!!!!!!!!!!!!![%#v]\n", x)
 	if x.Sign() > 0 {
 		stack.push(new(big.Int))
 	} else {
@@ -341,6 +342,7 @@ func opCaller(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 }
 
 func opCallValue(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	fmt.Printf("contract.value %#v\n", contract.value)
 	stack.push(evm.interpreter.intPool.get().Set(contract.value))
 	return nil, nil
 }
@@ -536,6 +538,7 @@ func opJump(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 
 func opJumpi(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	pos, cond := stack.pop(), stack.pop()
+	fmt.Println(cond)
 	if cond.Sign() != 0 {
 		if !contract.jumpdests.has(contract.CodeHash, contract.Code, pos) {
 			nop := contract.GetOp(pos.Uint64())

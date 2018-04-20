@@ -173,7 +173,7 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 		// Get the operation from the jump table matching the opcode and validate the
 		// stack and make sure there enough stack items available to perform the operation
 		operation := in.cfg.JumpTable[op]
-		fmt.Printf("operation=%d,pc=%d, %#v\n", op, pc, operation)
+		fmt.Printf("operation=%s,pc=%d, %#v\n", op.String(), pc, operation)
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
 		}
@@ -218,6 +218,7 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 		}
 
 		// execute the operation
+		stack.Print()
 		res, err := operation.execute(&pc, in.evm, contract, mem, stack)
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.

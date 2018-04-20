@@ -86,8 +86,8 @@ func main() {
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 	contractRef := vm.AccountRef(testAddress)
-	ret, outputs, gas, vmerr := evm.Create(contractRef, data, uint64(0x1da018), big.NewInt(1))
-	fmt.Println(ret, outputs, gas, vmerr)
+	ret, outputs, gasLeftover, vmerr := evm.Create(contractRef, data, uint64(200000), big.NewInt(0))
+	fmt.Println(ret, outputs, gasLeftover, vmerr)
 }
 
 type ChainContext struct{}
