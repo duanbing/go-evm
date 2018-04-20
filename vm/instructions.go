@@ -541,8 +541,10 @@ func opJumpi(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *St
 			nop := contract.GetOp(pos.Uint64())
 			return nil, fmt.Errorf("invalid jump destination (%v) %v", nop, pos)
 		}
+		fmt.Println("should jump here!")
 		*pc = pos.Uint64()
 	} else {
+		fmt.Println("why should jump here!")
 		*pc++
 	}
 
