@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"math/big"
 
+	"baidu.com/evm/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -595,6 +595,7 @@ func opCreate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	}
 	contract.Gas += returnGas
 	evm.interpreter.intPool.put(value, offset, size)
+	fmt.Println("opCreate !!!!!!!")
 
 	if suberr == errExecutionReverted {
 		return res, nil
@@ -626,6 +627,7 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 	} else {
 		stack.push(big.NewInt(1))
 	}
+	fmt.Println("opCall !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
@@ -660,6 +662,7 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	} else {
 		stack.push(big.NewInt(1))
 	}
+	fmt.Println("opCallCode !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
@@ -681,6 +684,7 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	} else {
 		stack.push(big.NewInt(1))
 	}
+	fmt.Println("opDelegatedCall !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(outOffset.Uint64(), outSize.Uint64(), ret)
 	}
@@ -711,6 +715,7 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	} else {
 		stack.push(big.NewInt(1))
 	}
+	fmt.Println("opStaticCall !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
