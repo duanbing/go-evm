@@ -75,6 +75,8 @@ func main() {
 	statedb.GetOrNewStateObject(testAddress)
 	statedb.GetOrNewStateObject(toAddress)
 	statedb.AddBalance(testAddress, big.NewInt(1e18))
+	testBalance := statedb.GetBalance(testAddress)
+	fmt.Println("testBalance =", testBalance)
 	must(err)
 
 	//	config := params.TestnetChainConfig
@@ -86,8 +88,18 @@ func main() {
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 	contractRef := vm.AccountRef(testAddress)
-	ret, outputs, gasLeftover, vmerr := evm.Create(contractRef, data, uint64(200000), big.NewInt(0))
-	fmt.Println(ret, outputs, gasLeftover, vmerr)
+	contactCode, contractAddress, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	fmt.Println(contactCode, contractAddress.String(), gasLeftover)
+	//	contactCode, contractAddress, gasLeftover, vmerr = evm.Create(contractRef, contactCode, uint64(200000), big.NewInt(1))
+	//	must(vmerr)
+	//	fmt.Println(contactCode, contractAddress.String(), gasLeftover)
+	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
+	testBalance = statedb.GetBalance(testAddress)
+	fmt.Println("after create contract, testBalance =", testBalance)
+
+	//now we got contract code, call it
+
 }
 
 type ChainContext struct{}
