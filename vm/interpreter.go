@@ -150,7 +150,6 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 			in.cfg.Tracer.CaptureState(in.evm, pcCopy, op, gasCopy, cost, mem, stackCopy, contract, in.evm.depth, err)
 		}
 	}()
-	fmt.Printf("%#v\n", contract)
 
 	// The Interpreter main run loop (contextual). This loop runs until either an
 	// explicit STOP, RETURN or SELFDESTRUCT is executed, an error occurred during
@@ -173,7 +172,6 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 		// Get the operation from the jump table matching the opcode and validate the
 		// stack and make sure there enough stack items available to perform the operation
 		operation := in.cfg.JumpTable[op]
-		fmt.Printf("operation=%s,pc=%d, %#v\n", op.String(), pc, operation)
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
 		}
@@ -218,7 +216,6 @@ func (in *Interpreter) Run(snapshot int, contract *Contract, input []byte) (ret 
 		}
 
 		// execute the operation
-		stack.Print()
 		res, err := operation.execute(&pc, in.evm, contract, mem, stack)
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.

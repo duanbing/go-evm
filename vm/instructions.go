@@ -228,7 +228,6 @@ func opEq(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack
 
 func opIszero(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	x := stack.pop()
-	fmt.Printf("no!!!!!!!!!!!!!!!!!!!!!!!![%#v]\n", x)
 	if x.Sign() > 0 {
 		stack.push(new(big.Int))
 	} else {
@@ -342,7 +341,6 @@ func opCaller(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 }
 
 func opCallValue(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	fmt.Printf("contract.value %#v\n", contract.value)
 	stack.push(evm.interpreter.intPool.get().Set(contract.value))
 	return nil, nil
 }
@@ -538,16 +536,13 @@ func opJump(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 
 func opJumpi(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	pos, cond := stack.pop(), stack.pop()
-	fmt.Println(cond)
 	if cond.Sign() != 0 {
 		if !contract.jumpdests.has(contract.CodeHash, contract.Code, pos) {
 			nop := contract.GetOp(pos.Uint64())
 			return nil, fmt.Errorf("invalid jump destination (%v) %v", nop, pos)
 		}
-		fmt.Println("should jump here!")
 		*pc = pos.Uint64()
 	} else {
-		fmt.Println("why should jump here!")
 		*pc++
 	}
 
@@ -600,7 +595,6 @@ func opCreate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	}
 	contract.Gas += returnGas
 	evm.interpreter.intPool.put(value, offset, size)
-	fmt.Println("opCreate !!!!!!!")
 
 	if suberr == errExecutionReverted {
 		return res, nil
@@ -632,7 +626,6 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 	} else {
 		stack.push(big.NewInt(1))
 	}
-	fmt.Println("opCall !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
@@ -667,7 +660,6 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	} else {
 		stack.push(big.NewInt(1))
 	}
-	fmt.Println("opCallCode !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}
@@ -689,7 +681,6 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	} else {
 		stack.push(big.NewInt(1))
 	}
-	fmt.Println("opDelegatedCall !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(outOffset.Uint64(), outSize.Uint64(), ret)
 	}
@@ -720,7 +711,6 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	} else {
 		stack.push(big.NewInt(1))
 	}
-	fmt.Println("opStaticCall !!!!!!!")
 	if err == nil || err == errExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 	}

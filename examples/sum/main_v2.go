@@ -59,8 +59,8 @@ func loadAbi(filename string) abi.ABI {
 }
 
 func main() {
-	binFileName := "./examples/event/coin_sol_Coin.bin"
-	abiFileName := "./examples/event/coin_sol_Coin.abi"
+	binFileName := "./sum_sol_sum.bin"
+	abiFileName := "./sum_sol_sum.abi"
 	data := loadBin(binFileName)
 	msg := ec.NewMessage(testAddress, &toAddress, nonce, amount, gasLimit, big.NewInt(1), data, false)
 	header := types.Header{
@@ -125,7 +125,15 @@ func main() {
 	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = statedb.GetBalance(testAddress)
 	fmt.Println("after call contract, testBalance =", testBalance)
-	fmt.Printf("Output %#v\n", hexutil.Encode(outputs))
+	for _, op := range method.Outputs {
+		switch op.Type.String() {
+		case "uint256":
+			fmt.Printf("Output name=%s, value=%d\n", op.Name, big.NewInt(0).SetBytes(outputs))
+
+		default:
+			fmt.Println(op.Name, op.Type.String())
+		}
+	}
 
 }
 

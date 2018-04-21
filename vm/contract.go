@@ -17,7 +17,6 @@
 package vm
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -105,7 +104,6 @@ func (c *Contract) GetOp(n uint64) OpCode {
 
 // GetByte returns the n'th byte in the contract's byte array
 func (c *Contract) GetByte(n uint64) byte {
-	fmt.Printf("get code [%d] from %v\n", n, c.Code)
 	if n < uint64(len(c.Code)) {
 		return c.Code[n]
 	}
