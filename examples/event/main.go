@@ -107,34 +107,75 @@ func main() {
 	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = statedb.GetBalance(testAddress)
 	fmt.Println("after create contract, testBalance =", testBalance)
-	// set input ,  formatted accocding to https://solidity.readthedocs.io/en/develop/abi-spec.html
-	//find methods := "multiply(uint)"
 	abiObj := loadAbi(abiFileName)
-	method := abiObj.Methods["multiply"]
-	//make params := "0xa"
-	pm := abi.U256(big.NewInt(10))
-	//concat method and params
-	//inputstr := hexutil.Encode(method.Id()) + pm[2:]
+	// get minter
+	method := abiObj.Methods["minter"]
+	pm := abi.U256(big.NewInt(0))
 	input := append(method.Id(), pm...)
-	//fmt.Println(hexutil.Encode(input))
-	fmt.Println("begin to exec contract")
 	statedb.SetCode(testAddress, contractCode)
 	outputs, gasLeftover, vmerr := evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
+	Print(outputs, "minter", method)
+	sender := outputs
+	receiver := common.LeftPadBytes(toAddress.Bytes(), 32)
+	senderAcc := vm.AccountRef(common.BytesToAddress(sender))
+
+	// mint
+	method = abiObj.Methods["mint"]
+	input = append(method.Id(), sender...)
+	pm = abi.U256(big.NewInt(1000000))
+	input = append(input, pm...)
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "mint", method)
 
 	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = statedb.GetBalance(testAddress)
-	fmt.Println("after call contract, testBalance =", testBalance)
+
+	method = abiObj.Methods["send"]
+	input = append(method.Id(), receiver...)
+	pm = abi.U256(big.NewInt(11))
+	input = append(input, pm...)
+	statedb.SetCode(testAddress, contractCode)
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "send", method)
+
+	// get balance
+	method = abiObj.Methods["balances"]
+	input = append(method.Id(), receiver...)
+	statedb.
+		SetCode(testAddress, contractCode)
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "balances", method)
+
+	// get balance
+	method = abiObj.Methods["balances"]
+	input = append(method.Id(), sender...)
+	statedb.
+		SetCode(testAddress, contractCode)
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "balances", method)
+
+	// get event
+	ev := abiObj.Events["Sent"]
+	fmt.Printf("%#v\n", ev)
+}
+
+func Print(outputs []byte, name string, method abi.Method) {
+	fmt.Println("##########")
+	fmt.Printf("method=%s\n", name)
 	for _, op := range method.Outputs {
 		switch op.Type.String() {
 		case "uint256":
-			fmt.Printf("Output name=%s, value=%d\n", op.Name, big.NewInt(0).SetBytes(outputs))
-
+			fmt.Printf("Output name=%s, value=%d, output=%#v\n", op.Name, big.NewInt(0).SetBytes(outputs), outputs)
 		default:
-			fmt.Println(op.Name, op.Type.String())
+			fmt.Printf("name = %s, info=%#v, output=%#v\n", op.Name, op, outputs)
 		}
 	}
-
+	fmt.Println("##########")
 }
 
 type ChainContext struct{}
