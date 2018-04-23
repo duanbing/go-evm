@@ -16,7 +16,9 @@ go run mainXX.go
 ```
 
 ### Usage
+
 0. Prepare
+
 * build sol,  get xxx.bin and xxx.abi 
 * make an evm instance, the most important struct is StateDB. 
 ```
@@ -63,11 +65,14 @@ evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 
 
 1. Executing a contract
+
 * create an contract, get the contract code
+
 ```
 contractRef := vm.AccountRef(testAddress)
 contractCode, _, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 ```
+
 * encode the input ,  refer to https://solidity.readthedocs.io/en/develop/abi-spec.html#argument-encoding
 ```
 method = abiObj.Methods["mint"]
@@ -75,13 +80,17 @@ input = append(method.Id(), sender...)
 pm = abi.U256(big.NewInt(1000000))
 input = append(input, pm...)
 ```
+
 * execute the evm.Call
+
 ```
 outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 ```
 
 2. Get Logs
+
 * all logs is stored in statdb, you can call GetLogs or Logs to get all the logs
+
 ```
 logs := statedb.Logs()
 其中Topics放着log的参数信息，Data放着当前EVM的内存信息。 
