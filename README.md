@@ -3,7 +3,7 @@ This is a single golang EVM.
 
 ### Example
 
-1: Compile contract
+1. Compile contract
 cd  $GOPATH/src/baidu.com/evm/example/event
 solcjs --abi --bin coin.sol
 ```
