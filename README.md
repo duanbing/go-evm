@@ -94,7 +94,6 @@ outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.Ge
 * all logs is stored in statdb, you can call GetLogs or Logs to get all the logs
 
 ```
-logs := statedb.Logs()
-其中Topics放着log的参数信息，Data放着当前EVM的内存信息。 
+logs := statedb.Logs() // logi instruction. logi store i+1 fields, the first one is stored in log.Data, and the last i field stores the parameter of logi 
 ```
 
