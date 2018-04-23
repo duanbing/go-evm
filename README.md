@@ -21,6 +21,7 @@ go run mainXX.go
 
 * build sol,  get xxx.bin and xxx.abi 
 * make an evm instance, the most important struct is StateDB. 
+
 ```
 msg := ec.NewMessage(testAddress, &toAddress, nonce, amount, gasLimit, big.NewInt(1), data, false)
 header := types.Header{
