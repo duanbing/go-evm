@@ -112,7 +112,7 @@ func main() {
 	method := abiObj.Methods["minter"]
 	pm := abi.U256(big.NewInt(0))
 	input := append(method.Id(), pm...)
-	statedb.SetCode(testAddress, contractCode)
+	evm.StateDB.SetCode(testAddress, contractCode)
 	outputs, gasLeftover, vmerr := evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "minter", method)
@@ -130,13 +130,22 @@ func main() {
 	Print(outputs, "mint", method)
 
 	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
-	testBalance = statedb.GetBalance(testAddress)
+	testBalance = evm.StateDB.GetBalance(testAddress)
 
 	method = abiObj.Methods["send"]
 	input = append(method.Id(), receiver...)
 	pm = abi.U256(big.NewInt(11))
 	input = append(input, pm...)
-	statedb.SetCode(testAddress, contractCode)
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "send", method)
+
+	//send 2
+
+	method = abiObj.Methods["send"]
+	input = append(method.Id(), receiver...)
+	pm = abi.U256(big.NewInt(19))
+	input = append(input, pm...)
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "send", method)
@@ -144,8 +153,6 @@ func main() {
 	// get balance
 	method = abiObj.Methods["balances"]
 	input = append(method.Id(), receiver...)
-	statedb.
-		SetCode(testAddress, contractCode)
 	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "balances", method)
@@ -153,15 +160,22 @@ func main() {
 	// get balance
 	method = abiObj.Methods["balances"]
 	input = append(method.Id(), sender...)
-	statedb.
-		SetCode(testAddress, contractCode)
 	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "balances", method)
 
 	// get event
-	ev := abiObj.Events["Sent"]
-	fmt.Printf("%#v\n", ev)
+	logs := statedb.Logs()
+
+	for _, log := range logs {
+		fmt.Printf("%#v\n", log)
+		for _, topic := range log.Topics {
+			fmt.Printf("topic: %#v\n", topic)
+		}
+		for _, data := range log.Data {
+			fmt.Printf("data: %#v\n", data)
+		}
+	}
 }
 
 func Print(outputs []byte, name string, method abi.Method) {
