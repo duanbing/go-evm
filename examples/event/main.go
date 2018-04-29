@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	//testHash    = common.StringToHash("duanbing")
+	testHash    = common.StringToHash("duanbing")
 	testAddress = common.StringToAddress("duanbing")
 	toAddress   = common.StringToAddress("andone")
 	amount      = big.NewInt(1)
@@ -63,25 +63,8 @@ func main() {
 	abiFileName := "./coin_sol_Coin.abi"
 	data := loadBin(binFileName)
 	msg := ec.NewMessage(testAddress, &toAddress, nonce, amount, gasLimit, big.NewInt(1), data, false)
-	header := types.Header{
-		// ParentHash: common.Hash{},
-		// UncleHash:  common.Hash{},
-		Coinbase: coinbase,
-		//	Root:        common.Hash{},
-		//	TxHash:      common.Hash{},
-		//	ReceiptHash: common.Hash{},
-		//	Bloom:      types.BytesToBloom([]byte("duanbing")),
-		Difficulty: big.NewInt(1),
-		Number:     big.NewInt(1),
-		GasLimit:   gasLimit,
-		GasUsed:    big.NewInt(1),
-		Time:       big.NewInt(time.Now().Unix()),
-		Extra:      nil,
-		//MixDigest:  testHash,
-		//Nonce:      types.EncodeNonce(1),
-	}
 	cc := ChainContext{}
-	ctx := ec.NewEVMContext(msg, &header, cc, &testAddress)
+	ctx := ec.NewEVMContext(msg, cc.GetHeader(testHash, 0), cc, &testAddress)
 	mdb, err := ethdb.NewMemDatabase()
 	must(err)
 	db := state.NewDatabase(mdb)
@@ -195,7 +178,22 @@ func Print(outputs []byte, name string, method abi.Method) {
 type ChainContext struct{}
 
 func (cc ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header {
-	fmt.Println("(cc ChainContext) GetHeader(hash common.Hash, number uint64)")
-	return nil
-	//return &header
+
+	return &types.Header{
+		// ParentHash: common.Hash{},
+		// UncleHash:  common.Hash{},
+		Coinbase: coinbase,
+		//	Root:        common.Hash{},
+		//	TxHash:      common.Hash{},
+		//	ReceiptHash: common.Hash{},
+		//	Bloom:      types.BytesToBloom([]byte("duanbing")),
+		Difficulty: big.NewInt(1),
+		Number:     big.NewInt(1),
+		GasLimit:   gasLimit,
+		GasUsed:    big.NewInt(1),
+		Time:       big.NewInt(time.Now().Unix()),
+		Extra:      nil,
+		//MixDigest:  testHash,
+		//Nonce:      types.EncodeNonce(1),
+	}
 }

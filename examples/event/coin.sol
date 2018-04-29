@@ -1,4 +1,4 @@
-pragma solidity ^0.4.20;
+pragma solidity ^0.4.20;  //The lowest compiler version
 
 contract Coin {
     // The keyword "public" makes those variables
@@ -28,3 +28,5 @@ contract Coin {
         emit Sent(msg.sender, receiver, amount);
     }
 }
+
+
