@@ -181,6 +181,7 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode
 		}
 		return value, n, didResolve, err
 	case hashNode:
+		fmt.Println("yes! here we go!")
 		child, err := t.resolveHash(n, key[:pos])
 		if err != nil {
 			return nil, n, true, err
@@ -214,6 +215,7 @@ func (t *Trie) Update(key, value []byte) {
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
 	k := keybytesToHex(key)
+	fmt.Printf("key=%#v\nk=%#v\n", key, k)
 	if len(value) != 0 {
 		_, n, err := t.insert(t.root, nil, k, valueNode(value))
 		if err != nil {
@@ -231,6 +233,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 }
 
 func (t *Trie) insert(n node, prefix, key []byte, value node) (bool, node, error) {
+	fmt.Printf("n=%#v\nprefix=%#v. key=%#v,value=%#v\n", n, prefix, key, value)
 	if len(key) == 0 {
 		if v, ok := n.(valueNode); ok {
 			return !bytes.Equal(v, value.(valueNode)), value, nil
@@ -240,9 +243,12 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (bool, node, error
 	switch n := n.(type) {
 	case *shortNode:
 		matchlen := prefixLen(key, n.Key)
+		fmt.Println("matchlen=", matchlen, n.Key)
 		// If the whole key matches, keep this short node as is
 		// and only update the value.
+		fmt.Println("len n.Key=", len(n.Key))
 		if matchlen == len(n.Key) {
+			fmt.Printf("shortNode, new node=%#v\n", n.Val)
 			dirty, nn, err := t.insert(n.Val, append(prefix, key[:matchlen]...), key[matchlen:], value)
 			if !dirty || err != nil {
 				return false, n, err
@@ -251,6 +257,7 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (bool, node, error
 		}
 		// Otherwise branch out at the index where they differ.
 		branch := &fullNode{flags: t.newFlag()}
+		fmt.Printf("branch = %#v\n", branch)
 		var err error
 		_, branch.Children[n.Key[matchlen]], err = t.insert(nil, append(prefix, n.Key[:matchlen+1]...), n.Key[matchlen+1:], n.Val)
 		if err != nil {
