@@ -19,8 +19,8 @@ package core
 import (
 	"math/big"
 
-	"baidu.com/evm/types"
-	"baidu.com/evm/vm"
+	"github.com/duanbing/go-evm/types"
+	"github.com/duanbing/go-evm/vm"
 	"github.com/ethereum/go-ethereum/common"
 )
 

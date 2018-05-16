@@ -13,15 +13,15 @@
 package main
 
 import (
-	ec "baidu.com/evm/core"
-	"baidu.com/evm/state"
-	"baidu.com/evm/vm"
 	"fmt"
+	ec "github.com/duanbing/go-evm/core"
+	"github.com/duanbing/go-evm/state"
+	"github.com/duanbing/go-evm/vm"
 	"time"
 
 	"math/big"
 
-	"baidu.com/evm/types"
+	"github.com/duanbing/go-evm/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

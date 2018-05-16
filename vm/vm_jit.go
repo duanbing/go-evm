@@ -38,7 +38,7 @@ import (
 	"math/big"
 	"unsafe"
 
-	"baidu.com/evm/state"
+	"github.com/duanbing/go-evm/state"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 )

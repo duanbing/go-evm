@@ -5,7 +5,7 @@ This is a single golang EVM.
 
 1. Compile contract
 ```
-cd  $GOPATH/src/baidu.com/evm/example/event
+cd  $GOPATH/src/github.com/duanbing/go-evm/example/event
 solcjs --abi --bin coin.sol
 ```
 Here we get code in xxx.bin, and abi in xx.abi

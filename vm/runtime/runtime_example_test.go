@@ -19,7 +19,7 @@ package runtime_test
 import (
 	"fmt"
 
-	"baidu.com/evm/vm/runtime"
+	"github.com/duanbing/go-evm/vm/runtime"
 	"github.com/ethereum/go-ethereum/common"
 )
 

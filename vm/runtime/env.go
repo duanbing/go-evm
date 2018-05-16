@@ -19,8 +19,8 @@ package runtime
 import (
 	"math/big"
 
-	"baidu.com/evm/core"
-	"baidu.com/evm/vm"
+	"github.com/duanbing/go-evm/core"
+	"github.com/duanbing/go-evm/vm"
 	"github.com/ethereum/go-ethereum/common"
 )
 

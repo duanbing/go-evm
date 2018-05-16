@@ -13,7 +13,7 @@
 package main
 
 import (
-	//"baidu.com/evm/state"
+	//"github.com/duanbing/go-evm/state"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"

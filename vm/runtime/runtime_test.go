@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"baidu.com/evm/state"
-	"baidu.com/evm/vm"
+	"github.com/duanbing/go-evm/state"
+	"github.com/duanbing/go-evm/vm"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
