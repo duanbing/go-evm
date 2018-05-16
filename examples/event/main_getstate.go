@@ -85,12 +85,13 @@ func main() {
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 	contractRef := vm.AccountRef(testAddress)
-	contractCode, contractAddr, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	contractCode, _, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = statedb.GetBalance(testAddress)
 	fmt.Println("after create contract, testBalance =", testBalance)
 	abiObj := loadAbi(abiFileName)
+
 	// get minter
 	method := abiObj.Methods["minter"]
 	pm := abi.U256(big.NewInt(0))
@@ -100,40 +101,8 @@ func main() {
 	must(vmerr)
 	Print(outputs, "minter", method)
 	sender := outputs
-	receiver := common.LeftPadBytes(toAddress.Bytes(), 32)
-	senderAcc := vm.AccountRef(common.BytesToAddress(sender))
-
-	// mint
-	method = abiObj.Methods["mint"]
-	input = append(method.Id(), sender...)
-	pm = abi.U256(big.NewInt(1000000))
-	input = append(input, pm...)
-	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
-	must(vmerr)
-	Print(outputs, "mint", method)
-
-	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
-	testBalance = evm.StateDB.GetBalance(testAddress)
-
-	method = abiObj.Methods["send"]
-	input = append(method.Id(), receiver...)
-	pm = abi.U256(big.NewInt(11))
-	input = append(input, pm...)
-	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
-	must(vmerr)
-	Print(outputs, "send", method)
-
-	//send 2
-
-	method = abiObj.Methods["send"]
-	input = append(method.Id(), receiver...)
-	pm = abi.U256(big.NewInt(19))
-	input = append(input, pm...)
-	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
-	must(vmerr)
-	Print(outputs, "send", method)
-
 	// get balance
+	receiver := common.LeftPadBytes(toAddress.Bytes(), 32)
 	method = abiObj.Methods["balances"]
 	input = append(method.Id(), receiver...)
 	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
@@ -157,15 +126,6 @@ func main() {
 		}
 		fmt.Printf("data: %#v\n", log.Data)
 	}
-
-	idx := 1
-	getstateFunc := func(key, value common.Hash) bool {
-		fmt.Printf("------------- idx=%d, key=%v,value=%v\n", idx, key, value)
-		idx += 1
-		return true
-	}
-	statedb.ForEachStorage(contractAddr, getstateFunc)
-	statedb.CommitTo(mdb, true)
 }
 
 func Print(outputs []byte, name string, method abi.Method) {
@@ -176,7 +136,7 @@ func Print(outputs []byte, name string, method abi.Method) {
 		case "uint256":
 			fmt.Printf("Output name=%s, value=%d, output=%#v\n", op.Name, big.NewInt(0).SetBytes(outputs), outputs)
 		default:
-			fmt.Printf("Output name = %s, info=%#v, output=%#v\n", op.Name, op, outputs)
+			fmt.Printf("name = %s, info=%#v, output=%#v\n", op.Name, op, outputs)
 		}
 	}
 	fmt.Println("##########")

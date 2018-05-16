@@ -431,6 +431,7 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 
 	// When iterating over the storage check the cache first
 	for h, value := range so.cachedStorage {
+		fmt.Println("duanbing2", h, value)
 		cb(h, value)
 	}
 
@@ -439,6 +440,7 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 		// ignore cached values
 		key := common.BytesToHash(db.trie.GetKey(it.Key))
 		if _, ok := so.cachedStorage[key]; !ok {
+			fmt.Println("duanbing3", key, it.Value)
 			cb(key, common.BytesToHash(it.Value))
 		}
 	}
