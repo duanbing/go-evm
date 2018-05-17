@@ -1,5 +1,5 @@
 ### Eth-VM
-This is a single golang EVM.
+This is a single golang EVM, it's based on go-ethereum release1.8
 
 ### Example
 
