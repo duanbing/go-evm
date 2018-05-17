@@ -77,10 +77,7 @@ contractCode, _, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.Get
 
 * encode the input ,  refer to https://solidity.readthedocs.io/en/develop/abi-spec.html#argument-encoding
 ```
-method = abiObj.Methods["mint"]
-input = append(method.Id(), sender...)
-pm = abi.U256(big.NewInt(1000000))
-input = append(input, pm...)
+input, err = abiObj.Pack("send", toAddress, big.NewInt(19))
 ```
 
 * execute the evm.Call
