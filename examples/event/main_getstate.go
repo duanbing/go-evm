@@ -68,7 +68,7 @@ func main() {
 	mdb, err := ethdb.NewLDBDatabase("/tmp/a.txt", 100, 100)
 	must(err)
 	db := state.NewDatabase(mdb)
-	statedb, err := state.New(common.Hash{}, db)
+	statedb, err := state.New(common.HexToHash("0x34218577e0b5a3620d1278b11e47bb7766104d3420a1aa5600a907de51ecea72"), db)
 	//set balance
 	statedb.GetOrNewStateObject(testAddress)
 	statedb.GetOrNewStateObject(toAddress)

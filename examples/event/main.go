@@ -78,10 +78,10 @@ func main() {
 	must(err)
 
 	//	config := params.TestnetChainConfig
-	config := params.AllProtocolChanges
+	config := params.MainnetChainConfig
 	logConfig := vm.LogConfig{}
 	structLogger := vm.NewStructLogger(&logConfig)
-	vmConfig := vm.Config{Debug: true, Tracer: structLogger, DisableGasMetering: false /*, JumpTable: vm.NewByzantiumInstructionSet()*/}
+	vmConfig := vm.Config{Debug: true, Tracer: structLogger /*, JumpTable: vm.NewByzantiumInstructionSet()*/}
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 	contractRef := vm.AccountRef(testAddress)
@@ -125,10 +125,8 @@ func main() {
 
 	//send 2
 
-	method = abiObj.Methods["send"]
-	input = append(method.Id(), receiver...)
-	pm = abi.U256(big.NewInt(19))
-	input = append(input, pm...)
+	input, err = abiObj.Pack("send", toAddress, big.NewInt(19))
+	must(err)
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "send", method)
@@ -165,7 +163,9 @@ func main() {
 		return true
 	}
 	statedb.ForEachStorage(contractAddr, getstateFunc)
-	statedb.CommitTo(mdb, true)
+	root, err := statedb.Commit(true)
+	must(err)
+	fmt.Println(root.Hex())
 }
 
 func Print(outputs []byte, name string, method abi.Method) {
@@ -196,8 +196,8 @@ func (cc ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header 
 		//	Bloom:      types.BytesToBloom([]byte("duanbing")),
 		Difficulty: big.NewInt(1),
 		Number:     big.NewInt(1),
-		GasLimit:   gasLimit,
-		GasUsed:    big.NewInt(1),
+		GasLimit:   1000000,
+		GasUsed:    1,
 		Time:       big.NewInt(time.Now().Unix()),
 		Extra:      nil,
 		//MixDigest:  testHash,
