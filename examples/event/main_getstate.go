@@ -68,53 +68,69 @@ func main() {
 	mdb, err := ethdb.NewLDBDatabase("/tmp/a.txt", 100, 100)
 	must(err)
 	db := state.NewDatabase(mdb)
-	statedb, err := state.New(common.HexToHash("0x34218577e0b5a3620d1278b11e47bb7766104d3420a1aa5600a907de51ecea72"), db)
+	statedb, err := state.New(common.HexToHash("0x2b92c9cabb651051e874e27ef8ec9b7a168249e5b7881d5902177010527b8ad2"), db)
+	must(err)
 	//set balance
 	statedb.GetOrNewStateObject(testAddress)
 	statedb.GetOrNewStateObject(toAddress)
-	statedb.AddBalance(testAddress, big.NewInt(1e18))
 	testBalance := statedb.GetBalance(testAddress)
 	fmt.Println("init testBalance =", testBalance)
-	must(err)
 
 	//	config := params.TestnetChainConfig
-	config := params.AllProtocolChanges
+	config := params.MainnetChainConfig
 	logConfig := vm.LogConfig{}
 	structLogger := vm.NewStructLogger(&logConfig)
-	vmConfig := vm.Config{Debug: true, Tracer: structLogger, DisableGasMetering: false /*, JumpTable: vm.NewByzantiumInstructionSet()*/}
+	vmConfig := vm.Config{Debug: true, Tracer: structLogger /*, JumpTable: vm.NewByzantiumInstructionSet()*/}
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 	contractRef := vm.AccountRef(testAddress)
-	contractCode, _, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	contractCode, contractAddr, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = statedb.GetBalance(testAddress)
 	fmt.Println("after create contract, testBalance =", testBalance)
 	abiObj := loadAbi(abiFileName)
-
 	// get minter
-	method := abiObj.Methods["minter"]
-	pm := abi.U256(big.NewInt(0))
-	input := append(method.Id(), pm...)
+	input, err := abiObj.Pack("minter")
+	must(err)
 	evm.StateDB.SetCode(testAddress, contractCode)
 	outputs, gasLeftover, vmerr := evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "minter", method)
 	sender := outputs
-	// get balance
-	receiver := common.LeftPadBytes(toAddress.Bytes(), 32)
-	method = abiObj.Methods["balances"]
-	input = append(method.Id(), receiver...)
-	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
-	must(vmerr)
-	Print(outputs, "balances", method)
+	senderAcc := vm.AccountRef(common.BytesToAddress(sender))
 
 	// get balance
-	method = abiObj.Methods["balances"]
-	input = append(method.Id(), sender...)
+	input, err = abiObj.Pack("balances", toAddress)
+	must(err)
 	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "balances", method)
+	Print(outputs, "balances")
+
+	// get balance
+	input, err = abiObj.Pack("balances", common.BytesToAddress(sender))
+	must(err)
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "balances")
+	//send 2
+	input, err = abiObj.Pack("send", toAddress, big.NewInt(19))
+	must(err)
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+
+	// get balance
+	input, err = abiObj.Pack("balances", toAddress)
+	must(err)
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "balances")
+
+	// get balance
+	input, err = abiObj.Pack("balances", common.BytesToAddress(sender))
+	must(err)
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	must(vmerr)
+	Print(outputs, "balances")
 
 	// get event
 	logs := statedb.Logs()
@@ -126,20 +142,21 @@ func main() {
 		}
 		fmt.Printf("data: %#v\n", log.Data)
 	}
+
+	idx := 1
+	getstateFunc := func(key, value common.Hash) bool {
+		fmt.Printf("------------- idx=%d, key=%v,value=%v\n", idx, key, value)
+		idx += 1
+		return true
+	}
+	statedb.ForEachStorage(contractAddr, getstateFunc)
+	root, err := statedb.Commit(true)
+	must(err)
+	fmt.Println("Root hash", root.Hex())
 }
 
-func Print(outputs []byte, name string, method abi.Method) {
-	fmt.Println("##########")
-	fmt.Printf("method=%s\n", name)
-	for _, op := range method.Outputs {
-		switch op.Type.String() {
-		case "uint256":
-			fmt.Printf("Output name=%s, value=%d, output=%#v\n", op.Name, big.NewInt(0).SetBytes(outputs), outputs)
-		default:
-			fmt.Printf("name = %s, info=%#v, output=%#v\n", op.Name, op, outputs)
-		}
-	}
-	fmt.Println("##########")
+func Print(outputs []byte, name string) {
+	fmt.Printf("method=%s, output=%#v\n", name, outputs)
 }
 
 type ChainContext struct{}
@@ -156,8 +173,8 @@ func (cc ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header 
 		//	Bloom:      types.BytesToBloom([]byte("duanbing")),
 		Difficulty: big.NewInt(1),
 		Number:     big.NewInt(1),
-		GasLimit:   gasLimit,
-		GasUsed:    big.NewInt(1),
+		GasLimit:   1000000,
+		GasUsed:    1,
 		Time:       big.NewInt(time.Now().Unix()),
 		Extra:      nil,
 		//MixDigest:  testHash,

@@ -36,7 +36,8 @@ var (
 	amount      = big.NewInt(1)
 	nonce       = uint64(0)
 	gasLimit    = big.NewInt(100000)
-	coinbase    = common.HexToAddress("0x0000000000000000000000000000000000000000")
+	//coinbase    = common.HexToAddress("0x0000000000000000000000000000000000000000")
+	coinbase = testAddress
 )
 
 func must(err error) {
@@ -92,36 +93,28 @@ func main() {
 	fmt.Println("after create contract, testBalance =", testBalance)
 	abiObj := loadAbi(abiFileName)
 	// get minter
-	method := abiObj.Methods["minter"]
-	pm := abi.U256(big.NewInt(0))
-	input := append(method.Id(), pm...)
+	input, err := abiObj.Pack("minter")
+	must(err)
 	evm.StateDB.SetCode(testAddress, contractCode)
 	outputs, gasLeftover, vmerr := evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	fmt.Println("minter")
+	fmt.Println(outputs)
+	fmt.Println(contractRef)
 	must(vmerr)
-	Print(outputs, "minter", method)
 	sender := outputs
-	receiver := common.LeftPadBytes(toAddress.Bytes(), 32)
 	senderAcc := vm.AccountRef(common.BytesToAddress(sender))
 
-	// mint
-	method = abiObj.Methods["mint"]
-	input = append(method.Id(), sender...)
-	pm = abi.U256(big.NewInt(1000000))
-	input = append(input, pm...)
+	input, err = abiObj.Pack("mint", common.BytesToAddress(sender), big.NewInt(1000000))
+	must(err)
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "mint", method)
 
 	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = evm.StateDB.GetBalance(testAddress)
 
-	method = abiObj.Methods["send"]
-	input = append(method.Id(), receiver...)
-	pm = abi.U256(big.NewInt(11))
-	input = append(input, pm...)
+	input, err = abiObj.Pack("send", toAddress, big.NewInt(11))
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "send", method)
 
 	//send 2
 
@@ -129,21 +122,20 @@ func main() {
 	must(err)
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "send", method)
 
 	// get balance
-	method = abiObj.Methods["balances"]
-	input = append(method.Id(), receiver...)
+	input, err = abiObj.Pack("balances", toAddress)
+	must(err)
 	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "balances", method)
+	Print(outputs, "balances")
 
 	// get balance
-	method = abiObj.Methods["balances"]
-	input = append(method.Id(), sender...)
+	input, err = abiObj.Pack("balances", common.BytesToAddress(sender))
+	must(err)
 	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "balances", method)
+	Print(outputs, "balances")
 
 	// get event
 	logs := statedb.Logs()
@@ -165,21 +157,11 @@ func main() {
 	statedb.ForEachStorage(contractAddr, getstateFunc)
 	root, err := statedb.Commit(true)
 	must(err)
-	fmt.Println(root.Hex())
+	fmt.Println("Root Hash", root.Hex())
 }
 
-func Print(outputs []byte, name string, method abi.Method) {
-	fmt.Println("##########")
-	fmt.Printf("method=%s\n", name)
-	for _, op := range method.Outputs {
-		switch op.Type.String() {
-		case "uint256":
-			fmt.Printf("Output name=%s, value=%d, output=%#v\n", op.Name, big.NewInt(0).SetBytes(outputs), outputs)
-		default:
-			fmt.Printf("Output name = %s, info=%#v, output=%#v\n", op.Name, op, outputs)
-		}
-	}
-	fmt.Println("##########")
+func Print(outputs []byte, name string) {
+	fmt.Printf("method=%s, output=%#v\n", name, outputs)
 }
 
 type ChainContext struct{}
@@ -189,7 +171,7 @@ func (cc ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header 
 	return &types.Header{
 		// ParentHash: common.Hash{},
 		// UncleHash:  common.Hash{},
-		Coinbase: coinbase,
+		Coinbase: testAddress,
 		//	Root:        common.Hash{},
 		//	TxHash:      common.Hash{},
 		//	ReceiptHash: common.Hash{},
