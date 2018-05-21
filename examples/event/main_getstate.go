@@ -31,12 +31,13 @@ import (
 
 var (
 	testHash    = common.StringToHash("duanbing")
-	testAddress = common.StringToAddress("duanbing")
+	fromAddress = common.StringToAddress("duanbing")
 	toAddress   = common.StringToAddress("andone")
 	amount      = big.NewInt(1)
 	nonce       = uint64(0)
 	gasLimit    = big.NewInt(100000)
-	coinbase    = common.HexToAddress("0x0000000000000000000000000000000000000000")
+	//coinbase    = common.HexToAddress("0x0000000000000000000000000000000000000000")
+	coinbase = fromAddress
 )
 
 func must(err error) {
@@ -59,22 +60,25 @@ func loadAbi(filename string) abi.ABI {
 }
 
 func main() {
-	binFileName := "./coin_sol_Coin.bin"
 	abiFileName := "./coin_sol_Coin.abi"
+	binFileName := "./coin_sol_Coin.bin"
 	data := loadBin(binFileName)
-	msg := ec.NewMessage(testAddress, &toAddress, nonce, amount, gasLimit, big.NewInt(1), data, false)
+	msg := ec.NewMessage(fromAddress, &toAddress, nonce, amount, gasLimit, big.NewInt(1), data, false)
 	cc := ChainContext{}
-	ctx := ec.NewEVMContext(msg, cc.GetHeader(testHash, 0), cc, &testAddress)
+	ctx := ec.NewEVMContext(msg, cc.GetHeader(testHash, 0), cc, &fromAddress)
 	mdb, err := ethdb.NewLDBDatabase("/tmp/a.txt", 100, 100)
+	defer mdb.Close()
 	must(err)
 	db := state.NewDatabase(mdb)
 	statedb, err := state.New(common.HexToHash("0x2b92c9cabb651051e874e27ef8ec9b7a168249e5b7881d5902177010527b8ad2"), db)
+	//statedb, err := state.New(common.Hash{}, db)
 	must(err)
 	//set balance
-	statedb.GetOrNewStateObject(testAddress)
+	statedb.GetOrNewStateObject(fromAddress)
 	statedb.GetOrNewStateObject(toAddress)
-	testBalance := statedb.GetBalance(testAddress)
-	fmt.Println("init testBalance =", testBalance)
+	testBalance := statedb.GetBalance(fromAddress)
+	fmt.Println("get testBalance =", testBalance)
+	must(err)
 
 	//	config := params.TestnetChainConfig
 	config := params.MainnetChainConfig
@@ -83,52 +87,44 @@ func main() {
 	vmConfig := vm.Config{Debug: true, Tracer: structLogger /*, JumpTable: vm.NewByzantiumInstructionSet()*/}
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
-	contractRef := vm.AccountRef(testAddress)
-	contractCode, contractAddr, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	contractRef := vm.AccountRef(fromAddress)
+	contractCode, contractAddr, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	statedb.SetBalance(testAddress, big.NewInt(0).SetUint64(gasLeftover))
-	testBalance = statedb.GetBalance(testAddress)
+	statedb.SetBalance(fromAddress, big.NewInt(0).SetUint64(gasLeftover))
+	testBalance = statedb.GetBalance(fromAddress)
 	fmt.Println("after create contract, testBalance =", testBalance)
 	abiObj := loadAbi(abiFileName)
-	// get minter
 	input, err := abiObj.Pack("minter")
 	must(err)
-	evm.StateDB.SetCode(testAddress, contractCode)
-	outputs, gasLeftover, vmerr := evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	evm.StateDB.SetCode(fromAddress, contractCode)
+	outputs, gasLeftover, vmerr := evm.Call(contractRef, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
+	fmt.Println(outputs)
+	fmt.Println(contractRef)
 	must(vmerr)
 	sender := outputs
 	senderAcc := vm.AccountRef(common.BytesToAddress(sender))
 
-	// get balance
-	input, err = abiObj.Pack("balances", toAddress)
-	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	input, err = abiObj.Pack("send", toAddress, big.NewInt(11))
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	Print(outputs, "balances")
 
-	// get balance
-	input, err = abiObj.Pack("balances", common.BytesToAddress(sender))
-	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
-	must(vmerr)
-	Print(outputs, "balances")
-	//send 2
+	//send
 	input, err = abiObj.Pack("send", toAddress, big.NewInt(19))
 	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 
 	// get balance
 	input, err = abiObj.Pack("balances", toAddress)
 	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "balances")
 
 	// get balance
 	input, err = abiObj.Pack("balances", common.BytesToAddress(sender))
 	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(contractRef, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "balances")
 
@@ -152,7 +148,9 @@ func main() {
 	statedb.ForEachStorage(contractAddr, getstateFunc)
 	root, err := statedb.Commit(true)
 	must(err)
-	fmt.Println("Root hash", root.Hex())
+	fmt.Println("Root Hash", root.Hex())
+	err = db.TrieDB().Commit(root, true)
+	must(err)
 }
 
 func Print(outputs []byte, name string) {
@@ -166,7 +164,7 @@ func (cc ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header 
 	return &types.Header{
 		// ParentHash: common.Hash{},
 		// UncleHash:  common.Hash{},
-		Coinbase: coinbase,
+		Coinbase: fromAddress,
 		//	Root:        common.Hash{},
 		//	TxHash:      common.Hash{},
 		//	ReceiptHash: common.Hash{},
