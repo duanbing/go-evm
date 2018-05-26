@@ -33,7 +33,7 @@ var (
 	testHash    = common.StringToHash("duanbing")
 	fromAddress = common.StringToAddress("duanbing")
 	toAddress   = common.StringToAddress("andone")
-	amount      = big.NewInt(1)
+	amount      = big.NewInt(0)
 	nonce       = uint64(0)
 	gasLimit    = big.NewInt(100000)
 	//coinbase    = common.HexToAddress("0x0000000000000000000000000000000000000000")
@@ -63,10 +63,13 @@ func main() {
 	abiFileName := "./coin_sol_Coin.abi"
 	binFileName := "./coin_sol_Coin.bin"
 	data := loadBin(binFileName)
-	msg := ec.NewMessage(fromAddress, &toAddress, nonce, amount, gasLimit, big.NewInt(1), data, false)
+
+	msg := ec.NewMessage(fromAddress, &toAddress, nonce, amount, gasLimit, big.NewInt(0), data, false)
 	cc := ChainContext{}
 	ctx := ec.NewEVMContext(msg, cc.GetHeader(testHash, 0), cc, &fromAddress)
-	mdb, err := ethdb.NewLDBDatabase("/tmp/a.txt", 100, 100)
+	dataPath := "/tmp/a.txt"
+	os.Remove(dataPath)
+	mdb, err := ethdb.NewLDBDatabase(dataPath, 100, 100)
 	must(err)
 	db := state.NewDatabase(mdb)
 
@@ -89,35 +92,43 @@ func main() {
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 	contractRef := vm.AccountRef(fromAddress)
+	fmt.Printf("%x\n", data)
 	contractCode, contractAddr, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
+	fmt.Printf("getcode:%x\n%x\n", contractCode, statedb.GetCode(contractAddr))
+
 	statedb.SetBalance(fromAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = statedb.GetBalance(fromAddress)
 	fmt.Println("after create contract, testBalance =", testBalance)
 	abiObj := loadAbi(abiFileName)
+
 	input, err := abiObj.Pack("minter")
 	must(err)
+	fmt.Println("11")
 	evm.StateDB.SetCode(fromAddress, contractCode)
 	outputs, gasLeftover, vmerr := evm.Call(contractRef, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
-	fmt.Println(outputs)
-	fmt.Println(contractRef)
+	fmt.Printf("minter is %x\n", outputs)
+	fmt.Printf("call address %x\n", contractRef)
 	must(vmerr)
 	sender := outputs
 	senderAcc := vm.AccountRef(common.BytesToAddress(sender))
 
 	input, err = abiObj.Pack("mint", common.BytesToAddress(sender), big.NewInt(1000000))
 	must(err)
+	fmt.Println("22")
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 
 	statedb.SetBalance(fromAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = evm.StateDB.GetBalance(fromAddress)
 
+	fmt.Println("33")
 	input, err = abiObj.Pack("send", toAddress, big.NewInt(11))
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 
 	//send
+	fmt.Println("44")
 	input, err = abiObj.Pack("send", toAddress, big.NewInt(19))
 	must(err)
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
@@ -165,18 +176,20 @@ func main() {
 
 	mdb.Close()
 
-	mdb2, err := ethdb.NewLDBDatabase("/tmp/a.txt", 100, 100)
+	mdb2, err := ethdb.NewLDBDatabase("/tmp/test_state_storage", 100, 100)
+	contractAddr = common.BytesToAddress([]byte("63e1d0fc342b9355bdda05adafa317edf644ddce"))
 	must(err)
 	db2 := state.NewDatabase(mdb2)
-	statedb2, err := state.New(common.HexToHash("0x2b92c9cabb651051e874e27ef8ec9b7a168249e5b7881d5902177010527b8ad2"), db2)
+	//statedb2, err := state.New(common.HexToHash("0x0e5beb537865785f98e2dae33c2d88d70d086ad61569863e1bbd34801c7a54ef"), db2)
+	statedb2, err := state.New(common.HexToHash("0x2c51c3995218789df648da9482a00668db162966523adbecd4643e44a974a746"), db2)
 	must(err)
 	testBalance = statedb2.GetBalance(fromAddress)
 	fmt.Println("get testBalance =", testBalance)
-
+	fmt.Printf("11111getcode:%x\n%x\n", contractCode, statedb2.GetCode(contractAddr))
 }
 
 func Print(outputs []byte, name string) {
-	fmt.Printf("method=%s, output=%#v\n", name, outputs)
+	fmt.Printf("method=%s, output=%x\n", name, outputs)
 }
 
 type ChainContext struct{}
@@ -194,7 +207,7 @@ func (cc ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header 
 		Difficulty: big.NewInt(1),
 		Number:     big.NewInt(1),
 		GasLimit:   1000000,
-		GasUsed:    1,
+		GasUsed:    0,
 		Time:       big.NewInt(time.Now().Unix()),
 		Extra:      nil,
 		//MixDigest:  testHash,

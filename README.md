@@ -18,10 +18,10 @@ go run mainXX.go
 
 ### Usage
 
-0. Prepare
+1. Prepare
 
-* build sol,  get xxx.bin and xxx.abi 
-* make an evm instance, the most important struct is StateDB. 
+* Build sol,  get xxx.bin and xxx.abi 
+* Make an evm instance, the most important struct is StateDB. 
 
 ```
 
@@ -66,29 +66,29 @@ vmConfig := vm.Config{Debug: true, Tracer: structLogger, DisableGasMetering: fal
 evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 ```
 
-1. Executing a contract
+2. Executing a contract
 
-* create an contract, get the contract code
+* Create an contract, get the contract code and contractAddr,  you can get code via contractAddr in the MPT tree.
 
 ```
 contractRef := vm.AccountRef(testAddress)
-contractCode, _, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
+contractCode, contractAddr, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 ```
 
-* encode the input ,  refer to https://solidity.readthedocs.io/en/develop/abi-spec.html#argument-encoding
+* Encode the input ,  refer to https://solidity.readthedocs.io/en/develop/abi-spec.html#argument-encoding
 ```
 input, err = abiObj.Pack("send", toAddress, big.NewInt(19))
 ```
 
-* execute the evm.Call
+* Execute the evm.Call
 
 ```
 outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.GetBalance(testAddress).Uint64(), big.NewInt(0))
 ```
 
-2. Get Logs
+3. Get Logs
 
-* all logs is stored in statdb, you can call GetLogs or Logs to get all the logs
+* All logs is stored in statdb, you can call GetLogs or Logs to get all the logs
 
 ```
 logs := statedb.Logs() // logi instruction. logi store i+1 fields, the first one is stored in log.Data, and the last i field stores the parameter of logi 
