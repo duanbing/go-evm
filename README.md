@@ -1,7 +1,8 @@
 ### Eth-VM
 This is a single golang EVM, it's based on go-ethereum release1.8
 All dependencies is maintained by `godep`.
-### Example
+
+### Run an example
 
 1. Compile contract
 ```
@@ -13,7 +14,7 @@ Here we get code in xxx.bin, and abi in xx.abi
 2. Run
 
 ```
-godep go run mainXX.go 
+godep go run main.go 
 ```
 
 ### Usage

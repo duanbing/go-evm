@@ -13,7 +13,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"math/big"
+	"os"
+	"time"
+
 	ec "github.com/duanbing/go-evm/core"
 	"github.com/duanbing/go-evm/state"
 	"github.com/duanbing/go-evm/types"
@@ -23,10 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
-	"io/ioutil"
-	"math/big"
-	"os"
-	"time"
 )
 
 var (
@@ -36,8 +38,7 @@ var (
 	amount      = big.NewInt(0)
 	nonce       = uint64(0)
 	gasLimit    = big.NewInt(100000)
-	//coinbase    = common.HexToAddress("0x0000000000000000000000000000000000000000")
-	coinbase = fromAddress
+	coinbase    = fromAddress
 )
 
 func must(err error) {
@@ -92,10 +93,9 @@ func main() {
 
 	evm := vm.NewEVM(ctx, statedb, config, vmConfig)
 	contractRef := vm.AccountRef(fromAddress)
-	fmt.Printf("%x\n", data)
 	contractCode, contractAddr, gasLeftover, vmerr := evm.Create(contractRef, data, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	fmt.Printf("getcode:%x\n%x\n", contractCode, statedb.GetCode(contractAddr))
+	//fmt.Printf("getcode:%x\n%x\n", contractCode, statedb.GetCode(contractAddr))
 
 	statedb.SetBalance(fromAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = statedb.GetBalance(fromAddress)
@@ -104,47 +104,50 @@ func main() {
 
 	input, err := abiObj.Pack("minter")
 	must(err)
-	fmt.Println("11")
-	evm.StateDB.SetCode(fromAddress, contractCode)
-	outputs, gasLeftover, vmerr := evm.Call(contractRef, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
-	fmt.Printf("minter is %x\n", outputs)
-	fmt.Printf("call address %x\n", contractRef)
+	outputs, gasLeftover, vmerr := evm.Call(contractRef, contractAddr, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
-	sender := outputs
-	senderAcc := vm.AccountRef(common.BytesToAddress(sender))
 
-	input, err = abiObj.Pack("mint", common.BytesToAddress(sender), big.NewInt(1000000))
+	//fmt.Printf("minter is %x\n", common.BytesToAddress(outputs))
+	//fmt.Printf("call address %x\n", contractRef)
+
+	sender := common.BytesToAddress(outputs)
+
+	if !bytes.Equal(sender.Bytes(), fromAddress.Bytes()) {
+		fmt.Println("caller are not equal to minter!!")
+		os.Exit(-1)
+	}
+
+	senderAcc := vm.AccountRef(sender)
+
+	input, err = abiObj.Pack("mint", sender, big.NewInt(1000000))
 	must(err)
-	fmt.Println("22")
-	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, contractAddr, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 
 	statedb.SetBalance(fromAddress, big.NewInt(0).SetUint64(gasLeftover))
 	testBalance = evm.StateDB.GetBalance(fromAddress)
 
-	fmt.Println("33")
 	input, err = abiObj.Pack("send", toAddress, big.NewInt(11))
-	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, contractAddr, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 
 	//send
-	fmt.Println("44")
 	input, err = abiObj.Pack("send", toAddress, big.NewInt(19))
 	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(senderAcc, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(senderAcc, contractAddr, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 
 	// get balance
 	input, err = abiObj.Pack("balances", toAddress)
 	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(contractRef, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, contractAddr, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "balances")
 
 	// get balance
-	input, err = abiObj.Pack("balances", common.BytesToAddress(sender))
+	input, err = abiObj.Pack("balances", sender)
 	must(err)
-	outputs, gasLeftover, vmerr = evm.Call(contractRef, fromAddress, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
+	outputs, gasLeftover, vmerr = evm.Call(contractRef, contractAddr, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 	Print(outputs, "balances")
 
@@ -159,33 +162,25 @@ func main() {
 		fmt.Printf("data: %#v\n", log.Data)
 	}
 
-	idx := 1
-	getstateFunc := func(key, value common.Hash) bool {
-		fmt.Printf("------------- idx=%d, key=%v,value=%v\n", idx, key, value)
-		idx += 1
-		return true
-	}
-	statedb.ForEachStorage(contractAddr, getstateFunc)
-
 	root, err = statedb.Commit(true)
 	must(err)
-	fmt.Println("Root Hash", root.Hex())
-
 	err = db.TrieDB().Commit(root, true)
 	must(err)
 
+	fmt.Println("Root Hash", root.Hex())
 	mdb.Close()
 
-	mdb2, err := ethdb.NewLDBDatabase("/tmp/test_state_storage", 100, 100)
-	contractAddr = common.BytesToAddress([]byte("63e1d0fc342b9355bdda05adafa317edf644ddce"))
+	mdb2, err := ethdb.NewLDBDatabase(dataPath, 100, 100)
 	must(err)
 	db2 := state.NewDatabase(mdb2)
-	//statedb2, err := state.New(common.HexToHash("0x0e5beb537865785f98e2dae33c2d88d70d086ad61569863e1bbd34801c7a54ef"), db2)
-	statedb2, err := state.New(common.HexToHash("0x2c51c3995218789df648da9482a00668db162966523adbecd4643e44a974a746"), db2)
+	statedb2, err := state.New(root, db2)
 	must(err)
 	testBalance = statedb2.GetBalance(fromAddress)
 	fmt.Println("get testBalance =", testBalance)
-	fmt.Printf("11111getcode:%x\n%x\n", contractCode, statedb2.GetCode(contractAddr))
+	if !bytes.Equal(contractCode, statedb2.GetCode(contractAddr)) {
+		fmt.Println("BUG!,the code was changed!")
+		os.Exit(-1)
+	}
 }
 
 func Print(outputs []byte, name string) {
