@@ -48,6 +48,7 @@ func (s *StateObject) CreateAccount(addr common.Address) {
 	s.stateStorage.CreateAccount(addr)
 }
 
+//BEGIN user-defined part combined with your own blockchain
 func (s *StateObject) SubBalance(addr common.Address, b *big.Int) {
 	s.stateStorage.SubBalance(addr, b)
 }
@@ -55,20 +56,14 @@ func (s *StateObject) AddBalance(addr common.Address, b *big.Int) {
 	s.stateStorage.AddBalance(addr, b)
 }
 func (s *StateObject) GetBalance(addr common.Address) *big.Int {
-
-	/*balance, err := utxoVM.GetBalance(addr.Str())
-	if err != nil {
-		log.Error("GetBalance failed", err)
-	}
-	*/
 	return big.NewInt(10e+16)
-	//	return s.stateStorage.GetBalance(addr)
 }
-
 func (s *StateObject) GetNonce(addr common.Address) uint64 {
 	return 0
 }
 func (s *StateObject) SetNonce(addr common.Address, nonce uint64) {}
+
+//END
 
 func (s *StateObject) GetCodeHash(addr common.Address) common.Hash {
 	return s.stateStorage.GetCodeHash(addr)
