@@ -94,4 +94,6 @@ outputs, gasLeftover, vmerr = evm.Call(senderAcc, testAddress, input, statedb.Ge
 ```
 logs := statedb.Logs() // logi instruction. logi store i+1 fields, the first one is stored in log.Data, and the last i field stores the parameter of logi 
 ```
+### Embedding
 
+This is the most exciting part!  if you want to combine UTXO or other ledgers tech with EVM, just implement `core/interface.go`! the MPT tree from Ethereum take care of the smart contract, and your blockchain take care of the transaction!
