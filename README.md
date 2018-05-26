@@ -96,4 +96,4 @@ logs := statedb.Logs() // logi instruction. logi store i+1 fields, the first one
 ```
 ### Embedding
 
-This is the most exciting part!  if you want to combine UTXO or other ledgers tech with EVM, just implement `core/interface.go`! the MPT tree from Ethereum take care of the smart contract, and your blockchain take care of the transaction!
+This is the most exciting part!  if you want to combine UTXO or other ledgers tech with EVM, just implement `core/interface.go`! the MPT tree from Ethereum takes care of the smart contract, and your blockchain takes care of the transaction!
