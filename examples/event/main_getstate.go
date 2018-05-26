@@ -59,6 +59,7 @@ func loadAbi(filename string) abi.ABI {
 	return abiObj
 }
 
+//!!!!!!  refer to the main.go if meet problems!!!!!!
 func main() {
 	abiFileName := "./coin_sol_Coin.abi"
 	binFileName := "./coin_sol_Coin.bin"
