@@ -128,11 +128,12 @@ func (s *StateObject) Commit(deleteEmptyObjects bool) (root common.Hash, err err
 	if err != nil {
 		return root, err
 	}
+	s.stateStorage.Finalise(deleteEmptyObjects)
 	err = s.db.TrieDB().Commit(root, true)
 	return
 }
 
-func (s *StateObject) Rollback(root common.Hash) error {
+func (s *StateObject) Reset(root common.Hash) error {
 	s.stateStorage.Reset(root)
 	return nil
 }

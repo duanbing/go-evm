@@ -50,6 +50,7 @@ func loadBin(filename string) []byte {
 	code, err := ioutil.ReadFile(filename)
 	must(err)
 	return hexutil.MustDecode("0x" + string(code))
+	//return []byte("0x" + string(code))
 }
 func loadAbi(filename string) abi.ABI {
 	abiFile, err := os.Open(filename)
@@ -137,6 +138,7 @@ func main() {
 	outputs, gasLeftover, vmerr = evm.Call(senderAcc, contractAddr, input, statedb.GetBalance(fromAddress).Uint64(), big.NewInt(0))
 	must(vmerr)
 
+	fmt.Printf("toAddress %x\n", toAddress)
 	// get balance
 	input, err = abiObj.Pack("balances", toAddress)
 	must(err)
@@ -171,6 +173,7 @@ func main() {
 	mdb.Close()
 
 	mdb2, err := ethdb.NewLDBDatabase(dataPath, 100, 100)
+	defer mdb2.Close()
 	must(err)
 	db2 := state.NewDatabase(mdb2)
 	statedb2, err := state.New(root, db2)
@@ -181,6 +184,17 @@ func main() {
 		fmt.Println("BUG!,the code was changed!")
 		os.Exit(-1)
 	}
+	getVariables(statedb2, contractAddr)
+}
+
+func getVariables(statedb *state.StateDB, hash common.Address) {
+	cb := func(key, value common.Hash) bool {
+		fmt.Printf("key=%x,value=%x\n", key, value)
+		return true
+	}
+
+	statedb.ForEachStorage(hash, cb)
+
 }
 
 func Print(outputs []byte, name string) {
